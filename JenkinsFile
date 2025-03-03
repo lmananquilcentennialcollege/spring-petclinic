@@ -3,13 +3,13 @@ pipeline {
 
     tools {
         maven 'Maven3'  // Ensure Maven is configured in Jenkins
-        jdk 'JDK21'     // Ensure JDK 17 is configured
+        jdk 'JDK17'     // Ensure JDK 17 is configured
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/YOUR_USERNAME/spring-petclinic.git'
+                git 'https://github.com/lmananquilcentennialcollege/spring-petclinic.git'
             }
         }
 
