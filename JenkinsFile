@@ -1,58 +1,35 @@
 pipeline {
     agent any
 
-    triggers {
-        cron('H/3 * * * 1')
+    tools {
+        maven 'Maven3'  // Ensure Maven is configured in Jenkins
+        jdk 'JDK17'     // Ensure JDK 17 is configured
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git 'https://github.com/YOUR_USERNAME/spring-petclinic.git'
             }
         }
 
         stage('Build') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh './mvnw clean package'
-                    } else {
-                        bat 'mvnw.cmd clean package'
-                    }
-                }
+                sh 'mvn clean install'
             }
         }
 
-        stage('Test') {
+        stage('Test & Code Coverage') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh './mvnw test'
-                    } else {
-                        bat 'mvnw.cmd test'
-                    }
-                }
-            }
-        }
-
-        stage('Jacoco Report') {
-            steps {
-                jacoco(
-                    execPattern: '/target/*.exec',
-                    classPattern: '/classes',
-                    sourcePattern: '/src/main/java',
-                    inclusionPattern: '/*.class',
-                    exclusionPattern: '/*Test.class'
-                )
+                sh 'mvn test'
+                jacoco execPattern: 'target/jacoco.exec'
             }
         }
     }
 
     post {
         always {
-            archiveArtifacts artifacts: '/target/*.jar', allowEmptyArchive: true
-            junit '/target/surefire-reports/*.xml'
+            archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
             jacoco()
         }
     }
