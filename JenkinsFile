@@ -1,46 +1,59 @@
 pipeline {
-    agent any  // Runs on any available Jenkins agent
+    agent any
 
-    tools {
-        maven 'Maven 3.9.9'  // Use the Maven you configured in Jenkins
+    triggers {
+        cron('H/3 * * * 1')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Clones your GitHub repo
-                git branch: 'main', url: 'https://github.com/lmananquilcentennialcollege/Jenkins-Web-App-Lab2.git'
-            }
-        }
-        
-        stage('Build') {
-            steps {
-                // Build the Maven Web App
-                bat 'mvn clean package'
-            }
-        }
-        
-        stage('Test') {
-            steps {
-                // Run tests (if you have any)
-                bat 'mvn test'
+                checkout scm
             }
         }
 
-        stage('Deploy') {
+        stage('Build') {
             steps {
-                // Simulate deployment (e.g., copying the .war file)
-                echo 'Deploying the web app...'
+                script {
+                    if (isUnix()) {
+                        sh './mvnw clean package'
+                    } else {
+                        bat 'mvnw.cmd clean package'
+                    }
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh './mvnw test'
+                    } else {
+                        bat 'mvnw.cmd test'
+                    }
+                }
+            }
+        }
+
+        stage('Jacoco Report') {
+            steps {
+                jacoco(
+                    execPattern: '/target/*.exec',
+                    classPattern: '/classes',
+                    sourcePattern: '/src/main/java',
+                    inclusionPattern: '/*.class',
+                    exclusionPattern: '/*Test.class'
+                )
             }
         }
     }
-    
+
     post {
-        success {
-            echo 'Pipeline executed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
+        always {
+            archiveArtifacts artifacts: '/target/*.jar', allowEmptyArchive: true
+            junit '/target/surefire-reports/*.xml'
+            jacoco()
         }
     }
 }
